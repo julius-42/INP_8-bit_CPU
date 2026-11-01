@@ -1,0 +1,8 @@
+mkdir inp26-projekt1
+cd inp26-projekt1/
+python3.12 -m venv env
+curl https://www.fit.vut.cz/person/vasicek/public/inp26/zadani.zip | jar xv
+. env/bin/activate
+pip install -r zadani/requirements.txt
+cd zadani/test/
+make

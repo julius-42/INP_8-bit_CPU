@@ -1,0 +1,21 @@
+<testsuites name="results">
+  <testsuite name="all" package="all">
+    <property name="random_seed" value="1793575254" />
+    <testcase name="test_reset" classname="cpu" file="&lt;makefun-gen-1&gt;" lineno="1" time="0.0012698173522949219" sim_time_ns="51.000001" ratio_time="40163.25726517161" />
+    <testcase name="test_init" classname="cpu" file="&lt;makefun-gen-3&gt;" lineno="1" time="0.003041982650756836" sim_time_ns="100.000001" ratio_time="32873.2976090841" />
+    <testcase name="test_increment" classname="cpu" file="&lt;makefun-gen-5&gt;" lineno="1" time="0.005151510238647461" sim_time_ns="280.000001" ratio_time="54352.99320564188" />
+    <testcase name="test_decrement" classname="cpu" file="&lt;makefun-gen-7&gt;" lineno="1" time="0.005118608474731445" sim_time_ns="280.000001" ratio_time="54702.36732937277" />
+    <testcase name="test_move" classname="cpu" file="&lt;makefun-gen-9&gt;" lineno="1" time="0.004141330718994141" sim_time_ns="210.000001" ratio_time="50708.33875614876" />
+    <testcase name="test_print" classname="cpu" file="&lt;makefun-gen-11&gt;" lineno="1" time="0.012552499771118164" sim_time_ns="1220.0000010000003" ratio_time="97191.7963151115" />
+    <testcase name="test_input" classname="cpu" file="&lt;makefun-gen-13&gt;" lineno="1" time="0.0279085636138916" sim_time_ns="2480.0000009999994" ratio_time="88861.61377956296" />
+    <testcase name="test_while_loop" classname="cpu" file="&lt;makefun-gen-15&gt;" lineno="1" time="0.005392551422119141" sim_time_ns="300.00000100000034" ratio_time="55632.29304953159">
+      <failure />
+    </testcase>
+    <testcase name="test_do_loop" classname="cpu" file="&lt;makefun-gen-17&gt;" lineno="1" time="0.00554347038269043" sim_time_ns="300.00000100000034" ratio_time="54117.72414925403">
+      <failure />
+    </testcase>
+    <testcase name="test_login_julius" classname="cpu" file="&lt;makefun-gen-19&gt;" lineno="1" time="0.1604442596435547" sim_time_ns="13410.000001" ratio_time="83580.42868465255">
+      <failure />
+    </testcase>
+  </testsuite>
+</testsuites>
