@@ -60,18 +60,13 @@ architecture behavioral of cpu is
     S_PTR_INC,
     S_PTR_DEC,
 
-    -- load value from mem
-    S_VAL_INC_L,
-    S_VAL_DEC_L,
-    -- increment and write new value
-    S_VAL_INC_W,
-    S_VAL_DEC_W,
+    S_VAL_INC,
+    S_VAL_DEC,
     
     --S_WHILE_S,
     --S_WHILE_E,
     --- I/O states ---
-    S_PRINT_L,
-    S_PRINT_W,
+    S_PRINT,
     S_INPUT,
 
     -- Encounter '@' during run
@@ -151,21 +146,34 @@ begin
         DATA_EN <= '1';
         state_next <= S_DECODE;
       
-      when S_DECODE => 
-        if DATA_RDATA = 43 then
-          state_next <= S_VAL_INC_L; -- execute '+'
-        elsif DATA_RDATA = 44 then
-          state_next <= S_INPUT; -- execute ','
-        elsif DATA_RDATA = 45 then
-          state_next <= S_VAL_DEC_L; -- execute '-'
-        elsif DATA_RDATA = 46 then
-          state_next <= S_PRINT_L; -- execute '.'
-        elsif DATA_RDATA = 60 then
-          state_next <= S_PTR_DEC; -- execute '<'
-        elsif DATA_RDATA = 62 then
-          state_next <= S_PTR_INC; -- execute '>'
+      when S_DECODE =>
+
+        if DATA_RDATA = 43 then    -- execute '+'
+          DATA_ADDR <= ptr_reg;
+          DATA_EN <= '1';
+          state_next <= S_VAL_INC;
+
+        elsif DATA_RDATA = 44 then -- execute ','
+          state_next <= S_INPUT;
+
+        elsif DATA_RDATA = 45 then -- execute '-'
+          DATA_ADDR <= ptr_reg;
+          DATA_EN <= '1';
+          state_next <= S_VAL_DEC;
+
+        elsif DATA_RDATA = 46 then -- execute ','
+          DATA_ADDR <= ptr_reg;
+          DATA_EN <= '1';
+          state_next <= S_PRINT;
+
+        elsif DATA_RDATA = 60 then -- execute '<'
+          state_next <= S_PTR_DEC;
+        elsif DATA_RDATA = 62 then -- execute '>'
+          state_next <= S_PTR_INC;
+
         elsif DATA_RDATA = 64 then
           state_next <= S_HALT; -- execute '@'
+
         else
           pc_next <= pc_reg + 1; -- ignore unknown instruction
           state_next <= S_FETCH;
@@ -180,18 +188,8 @@ begin
         ptr_next <= ptr_reg - 1;
         pc_next <= pc_reg + 1;
         state_next <= S_FETCH;
-        
-      when S_VAL_INC_L =>
-        DATA_ADDR <= ptr_reg;
-        DATA_EN <= '1';
-        state_next <= S_VAL_INC_W;
 
-      when S_VAL_DEC_L =>
-        DATA_ADDR <= ptr_reg;
-        DATA_EN <= '1';
-        state_next <= S_VAL_DEC_W;
-        
-      when S_VAL_INC_W =>
+      when S_VAL_INC =>
         DATA_ADDR <= ptr_reg;
         DATA_EN <= '1';
         DATA_RDWR <= '0';
@@ -199,18 +197,13 @@ begin
         pc_next <= pc_reg + 1;
         state_next <= S_FETCH;
       
-      when S_VAL_DEC_W =>
+      when S_VAL_DEC =>
         DATA_ADDR <= ptr_reg;
         DATA_EN <= '1';
         DATA_RDWR <= '0';
         DATA_WDATA <= DATA_RDATA - 1;
         pc_next <= pc_reg + 1;
         state_next <= S_FETCH;
-
-      when S_PRINT_L =>
-        DATA_ADDR <= ptr_reg;
-        DATA_EN <= '1';
-        state_next <= S_PRINT_W;
 
       when S_INPUT =>
         IN_REQ <= '1';
@@ -224,7 +217,7 @@ begin
           state_next <= S_FETCH;
         end if;
 
-      when S_PRINT_W =>
+      when S_PRINT =>
         if (OUT_BUSY = '0') then
           OUT_DATA <= DATA_RDATA;
           OUT_WE <= '1';
