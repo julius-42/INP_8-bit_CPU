@@ -63,8 +63,9 @@ architecture behavioral of cpu is
     S_VAL_INC,
     S_VAL_DEC,
     
-    --S_WHILE_S,
-    --S_WHILE_E,
+    S_WHILE_ST,
+    S_WHILE_SKIP,
+    S_WHILE_END,
     --- I/O states ---
     S_PRINT,
     S_INPUT,
@@ -83,6 +84,9 @@ architecture behavioral of cpu is
   signal ptr_next : std_logic_vector(12 downto 0);
   signal sp : natural range 0 to 15;
   signal sp_next : natural range 0 to 15;
+  signal scope_ct : integer range 0 to 255;
+  signal scope_ct_next : integer range 0 to 255;
+  signal stack_push : std_logic;
   signal loop_stack : stack_t;
 
 begin
@@ -93,23 +97,33 @@ begin
       pc_reg <= (others => '0');
       ptr_reg <= (others => '0');
       sp <= 0;
+      scope_ct <= 0;
       loop_stack <= (others => (others => '0'));
     elsif rising_edge(CLK) then
       if EN = '1' then
         state_reg <= state_next;
         pc_reg <= pc_next;
         ptr_reg <= ptr_next;
+        sp <= sp_next;
+        scope_ct <= scope_ct_next;
+
+        if(stack_push = '1') then
+          loop_stack(sp) <= pc_reg + 1;
+        end if;
+
       end if;
     end if;
   end process;
 
-  process (state_reg, pc_reg, ptr_reg, IN_VLD, IN_DATA, DATA_RDATA, OUT_BUSY)
+  process (state_reg, pc_reg, ptr_reg, sp, scope_ct, loop_stack, IN_VLD, IN_DATA, DATA_RDATA, OUT_BUSY)
   begin
 
     state_next <= state_reg;
     pc_next    <= pc_reg;
     ptr_next   <= ptr_reg;
     sp_next <= sp;
+    scope_ct_next <= scope_ct;
+    stack_push <= '0';
 
     DATA_ADDR  <= pc_reg;
     DATA_WDATA <= (others => '0');
@@ -161,7 +175,7 @@ begin
           DATA_EN <= '1';
           state_next <= S_VAL_DEC;
 
-        elsif DATA_RDATA = 46 then -- execute ','
+        elsif DATA_RDATA = 46 then -- execute '.'
           DATA_ADDR <= ptr_reg;
           DATA_EN <= '1';
           state_next <= S_PRINT;
@@ -171,9 +185,19 @@ begin
         elsif DATA_RDATA = 62 then -- execute '>'
           state_next <= S_PTR_INC;
 
-        elsif DATA_RDATA = 64 then
-          state_next <= S_HALT; -- execute '@'
-
+        elsif DATA_RDATA = 64 then -- execute '@'
+          state_next <= S_HALT;
+        
+        elsif DATA_RDATA = 91 then -- execute '['
+          DATA_ADDR <= ptr_reg;
+          DATA_EN <= '1';
+          state_next <= S_WHILE_ST;
+        
+        elsif DATA_RDATA = 93 then -- execute ']'
+          DATA_ADDR <= ptr_reg;
+          DATA_EN <= '1';
+          state_next <= S_WHILE_END;
+          
         else
           pc_next <= pc_reg + 1; -- ignore unknown instruction
           state_next <= S_FETCH;
@@ -223,7 +247,52 @@ begin
           OUT_WE <= '1';
           pc_next <= pc_reg + 1;
           state_next <= S_FETCH;
-        end if;            
+        end if;
+        
+      when S_WHILE_ST =>
+        if (DATA_RDATA /= 0) then
+          stack_push <= '1';
+          sp_next <= sp + 1;
+          pc_next <= pc_reg + 1;
+          state_next <= S_FETCH;
+        else
+          scope_ct_next <= 1;
+          pc_next <= pc_reg + 1;
+          DATA_ADDR <= pc_reg + 1;
+          DATA_EN <= '1';
+          state_next <= S_WHILE_SKIP;
+        end if;
+      
+      when S_WHILE_SKIP =>
+        DATA_EN <= '1';
+
+        if (DATA_RDATA = 91) then
+          scope_ct_next <= scope_ct + 1;
+          pc_next <= pc_reg + 1;
+          state_next <= S_WHILE_SKIP;
+        elsif (DATA_RDATA = 93) then
+          if (scope_ct = 1) then
+            pc_next <= pc_reg + 1;
+            state_next <= S_FETCH;
+          else
+            scope_ct_next <= scope_ct - 1;
+            pc_next <= pc_reg + 1;
+            state_next <= S_WHILE_SKIP;
+          end if;
+        else
+          pc_next <= pc_reg + 1;
+          state_next <= S_WHILE_SKIP;
+        end if;
+      
+      when S_WHILE_END =>
+        if(DATA_RDATA /= 0) then
+          pc_next <= loop_stack(sp - 1);
+          state_next <= S_FETCH;
+        else
+          sp_next <= sp - 1;
+          pc_next <= pc_reg + 1;
+          state_next <= S_FETCH;
+        end if;
 
       when S_HALT =>
         DONE <= '1';
@@ -231,6 +300,5 @@ begin
 
     end case;
   end process;
-
 end behavioral;
 
