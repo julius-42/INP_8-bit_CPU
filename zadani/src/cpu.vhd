@@ -66,6 +66,9 @@ architecture behavioral of cpu is
     S_WHILE_ST,
     S_WHILE_SKIP,
     S_WHILE_END,
+
+    S_DOWHILE_END,
+
     --- I/O states ---
     S_PRINT,
     S_INPUT,
@@ -162,7 +165,18 @@ begin
       
       when S_DECODE =>
 
-        if DATA_RDATA = 43 then    -- execute '+'
+        if DATA_RDATA = 40 then    -- execute '('
+          stack_push <= '1';
+          sp_next    <= sp + 1;
+          pc_next    <= pc_reg + 1;
+          state_next <= S_FETCH;
+
+        elsif DATA_RDATA = 41 then -- execute ')'
+          DATA_ADDR  <= ptr_reg;
+          DATA_EN    <= '1';
+          state_next <= S_DOWHILE_END;
+
+        elsif DATA_RDATA = 43 then -- execute '+'
           DATA_ADDR <= ptr_reg;
           DATA_EN <= '1';
           state_next <= S_VAL_INC;
@@ -242,6 +256,9 @@ begin
         end if;
 
       when S_PRINT =>
+        DATA_ADDR <= ptr_reg;
+        DATA_EN <= '1';
+        
         if (OUT_BUSY = '0') then
           OUT_DATA <= DATA_RDATA;
           OUT_WE <= '1';
@@ -265,26 +282,30 @@ begin
       
       when S_WHILE_SKIP =>
         DATA_EN <= '1';
+        DATA_ADDR <= pc_reg + 1;
+        pc_next <= pc_reg + 1;
 
         if (DATA_RDATA = 91) then
           scope_ct_next <= scope_ct + 1;
-          pc_next <= pc_reg + 1;
-          state_next <= S_WHILE_SKIP;
         elsif (DATA_RDATA = 93) then
           if (scope_ct = 1) then
-            pc_next <= pc_reg + 1;
             state_next <= S_FETCH;
           else
             scope_ct_next <= scope_ct - 1;
-            pc_next <= pc_reg + 1;
-            state_next <= S_WHILE_SKIP;
           end if;
-        else
-          pc_next <= pc_reg + 1;
-          state_next <= S_WHILE_SKIP;
         end if;
       
       when S_WHILE_END =>
+        if(DATA_RDATA /= 0) then
+          pc_next <= loop_stack(sp - 1);
+          state_next <= S_FETCH;
+        else
+          sp_next <= sp - 1;
+          pc_next <= pc_reg + 1;
+          state_next <= S_FETCH;
+        end if;
+
+      when S_DOWHILE_END =>
         if(DATA_RDATA /= 0) then
           pc_next <= loop_stack(sp - 1);
           state_next <= S_FETCH;
